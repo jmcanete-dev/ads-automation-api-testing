@@ -14,11 +14,11 @@ services:
       - redis
       - postgresdb
     healthcheck:
-      test: ["CMD", "mysql", "-h", "mysql", "-u", "pgoc_marketing_admin", "-p@_AdsEncrypted2025", "-e", "SELECT 1;"]
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:5095/health"]
       interval: 10s
+      retries: 5
       start_period: 10s
-      timeout: 10s
+      timeout: 5s
     restart: always
 
   celery:
