@@ -1,0 +1,83 @@
+services:
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: ads-automation-api
+    volumes:
+      - .:/app 
+    ports:
+      - "5095:5095"
+    environment:
+      TZ: Asia/Manila
+    depends_on:
+      - redis
+      - postgresdb
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "mysql", "-u", "pgoc_marketing_admin", "-p@_AdsEncrypted2025", "-e", "SELECT 1;"]
+      retries: 5
+      interval: 10s
+      start_period: 10s
+      timeout: 10s
+    restart: always
+
+  celery:
+    container_name: celeryAds
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    volumes:
+      - .:/app 
+    command: celery -A make_celery.celery_app worker --loglevel=INFO 
+    environment:
+      TZ: Asia/Manila
+    depends_on:
+      - redis
+      - postgresdb
+    restart: always
+
+  celerybeat:
+    container_name: celerybeatAds
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    volumes:
+      - .:/app 
+    command: celery -A make_celery.celery_app beat --loglevel=INFO 
+    environment:
+      TZ: Asia/Manila
+    depends_on:
+      - redis
+      - postgresdb
+    restart: always
+
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: redisAds
+    ports:
+      - "6391:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+    restart: always
+  postgresdb:
+    image: postgres:15
+    container_name: db_postgres_ads
+    environment:
+      POSTGRES_DB: adsmarketing_users
+      POSTGRES_USER: pgoc_marketing_admin
+      POSTGRES_PASSWORD: "@_AdsEncrypted2025"
+      TZ: Asia/Manila  # Set timezone environment variable for container
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pgoc_marketing_admin -d adsmarketing_users"]
+      retries: 5
+      interval: 10s
+      start_period: 10s
+      timeout: 10s
+    restart: always
+
+volumes:
+  postgres_data:

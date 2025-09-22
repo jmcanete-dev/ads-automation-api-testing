@@ -1,0 +1,35 @@
+# Base image
+FROM python:3.12-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    build-base \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    python3-dev \
+    py3-wheel \
+    bash \
+    linux-headers \
+    postgresql-dev
+
+# Set the working directory inside the container
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+# Copy the entire project into the container
+# This copies everything from the current directory (where Dockerfile is located) into /app
+COPY . . 
+
+# Set environment variables for Flask
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_PORT=5095
+ENV FLASK_ENV=development
+# Expose the Flask app port
+EXPOSE 5095
+
+# Set the entry point for the Flask app
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5095"]

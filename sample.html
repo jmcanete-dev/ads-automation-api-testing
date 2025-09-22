@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>SSE Client - Multi Key Support</title>
+</head>
+<body>
+    <h1>Server-Sent Events (SSE) Client</h1>
+    <h2>Listening for Keys:</h2>
+    <ul id="key-list"></ul>
+    <h3>Messages:</h3>
+    <ul id="messages"></ul>
+    <h3>Raw Data Log:</h3>
+    <pre id="log-output"></pre>
+
+    <button onclick="clearLogs()">Clear Logs</button>
+
+    <script>
+        const SERVER_URL = "http://localhost:5095/api/v1"; // Change if needed
+        const keys = ["1-979900097429705-key"]; // Example keys
+        const keyList = document.getElementById("key-list");
+        const messageList = document.getElementById("messages");
+        const logOutput = document.getElementById("log-output");
+
+        // Load saved logs from localStorage
+        const savedLogs = JSON.parse(localStorage.getItem("sse_logs")) || [];
+        logOutput.textContent = savedLogs.join("\n");
+
+        // Display active keys
+        keys.forEach((key) => {
+            const li = document.createElement("li");
+            li.textContent = key;
+            keyList.appendChild(li);
+        });
+
+        let eventSource = null;
+
+        function startSSE() {
+            if (eventSource) {
+                eventSource.close(); // Close previous instance if reconnecting
+            }
+
+            const keyParam = keys.map(encodeURIComponent).join(","); // Convert keys to URL parameter
+            eventSource = new EventSource(`${SERVER_URL}/messageevents?keys=${keyParam}`);
+
+            eventSource.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+
+                console.log("Received:", data);
+
+                // Append raw data to logs
+                const logEntry = `[${new Date().toLocaleTimeString()}] ${JSON.stringify(data, null, 2)}`;
+                savedLogs.push(logEntry);
+                localStorage.setItem("sse_logs", JSON.stringify(savedLogs));
+                logOutput.textContent = savedLogs.join("\n");
+
+                // Append message to list
+                if (data.data) {
+                    const li = document.createElement("li");
+                    li.textContent = `[${data.key}] ${JSON.stringify(data.data)}`;
+                    messageList.appendChild(li);
+                }
+            };
+
+            eventSource.onerror = function (error) {
+                console.error("SSE Error:", error);
+                eventSource.close(); // Close connection on error
+                setTimeout(startSSE, 3000); // Attempt reconnection after 3s
+            };
+        }
+
+        startSSE(); // Start listening
+
+        function clearLogs() {
+            localStorage.removeItem("sse_logs");
+            logOutput.textContent = "";
+            messageList.innerHTML = "";
+        }
+    </script>
+</body>
+</html>
