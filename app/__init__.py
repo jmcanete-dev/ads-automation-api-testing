@@ -140,6 +140,10 @@ def create_app():
         seed_regions()  # Call the seed function after creating tables
         seed_cities()
 
+    # healthcheck endpoint
+    @app.route("/health", methods=["GET"])
+    def health():
+        return jsonify({"status": "ok"}), 200
 
     @app.route("/")
     def home():
