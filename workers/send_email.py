@@ -36,3 +36,17 @@ def send_email_task_with_resend(self, email, subject, html_content):
         except self.MaxRetriesExceededError:
             return {'status': 'error', 'message': f'Failed after max retries: {str(e)}'}
 
+@shared_task(bind=True)
+def send_email_task(self, email, subject, html_content):
+    """Shared Celery task to send email asynchronously with preformatted HTML content."""
+    try:
+        msg = Message(
+            subject=subject,
+            sender=os.getenv('MAIL_USERNAME'),
+            recipients=[email],
+            html=html_content  # Passing preformatted HTML content
+        )
+        mail.send(msg)
+        return {'status': 'success', 'message': f'Email sent to {email}'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
