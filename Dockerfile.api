@@ -12,7 +12,8 @@ RUN apk add --no-cache \
     py3-wheel \
     bash \
     linux-headers \
-    postgresql-dev
+    postgresql-dev \
+    curl
 
 # Set the working directory inside the container
 WORKDIR /app
