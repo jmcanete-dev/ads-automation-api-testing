@@ -7,8 +7,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from uuid import uuid4
 from sqlalchemy.exc import SQLAlchemyError
-from workers.send_email import send_email_task
-
+from workers.send_email import send_email_task_with_resend
 # Initialize Blueprint
 email_verification_bp = Blueprint('email_verification', __name__)
 
