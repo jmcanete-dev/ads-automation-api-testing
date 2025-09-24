@@ -18,17 +18,21 @@ def configure_mail(app):
     app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False') == 'True'
     mail.init_app(app)
 
-@shared_task(bind=True)
-def send_email_task(self, email, subject, html_content):
-    """Shared Celery task to send email asynchronously with preformatted HTML content."""
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)  # retry up to 3 times, wait 60s each
+def send_email_task_with_resend(self, email, subject, html_content):
+    """Celery task with automatic retries if sending fails."""
     try:
         msg = Message(
             subject=subject,
             sender=os.getenv('MAIL_USERNAME'),
             recipients=[email],
-            html=html_content  # Now passing preformatted HTML content
+            html=html_content
         )
         mail.send(msg)
         return {'status': 'success', 'message': f'Email sent to {email}'}
     except Exception as e:
-        return {'status': 'error', 'message': str(e)}
+        try:
+            self.retry(exc=e)  # Celery will automatically retry
+        except self.MaxRetriesExceededError:
+            return {'status': 'error', 'message': f'Failed after max retries: {str(e)}'}
+
