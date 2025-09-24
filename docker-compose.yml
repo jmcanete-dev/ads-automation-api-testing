@@ -10,6 +10,10 @@ services:
       - "5095:5095"
     environment:
       TZ: Asia/Manila
+      FLASK_APP: app
+      FLASK_RUN_PORT: 5095
+      FLASK_ENV: development
+      ALLOWED_ORIGINS: https://dev.ads.philippian.ph
     depends_on:
       - redis
       - postgresdb
